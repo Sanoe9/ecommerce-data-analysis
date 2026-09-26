@@ -1,59 +1,90 @@
--- Number of unique products
-SELECT COUNT(DISTINCT product_id) AS unique_products
+-- ============================================================
+-- E-Commerce Data Analysis
+-- 03 - Product Analysis
+-- ============================================================
+-- Purpose:
+-- Analyze product categories, order-item volume, and product
+-- sales performance.
+-- ============================================================
+
+-- 1. Total number of products
+-- Business question:
+-- How many products are listed in the dataset?
+
+SELECT
+COUNT(*) AS total_products
+FROM products;
+
+-- 2. Number of order items
+-- Business question:
+-- How many individual product items were purchased?
+
+SELECT
+COUNT(*) AS total_order_items
 FROM order_items;
 
+-- 3. Order items by product category
+-- Business question:
+-- Which product categories have the highest order volume?
 
--- Number of orders containing each product
-SELECT 
-    product_id,
-    COUNT(DISTINCT order_id) AS order_count
-FROM order_items
-GROUP BY product_id
-ORDER BY order_count DESC;
-
-
--- Number of items sold by product
 SELECT
-    product_id,
-    COUNT(*) AS items_sold
+products.product_category_name,
+COUNT(*) AS number_of_order_items
 FROM order_items
-GROUP BY product_id
-ORDER BY items_sold DESC
+JOIN products
+ON order_items.product_id = products.product_id
+GROUP BY products.product_category_name
+ORDER BY number_of_order_items DESC
 LIMIT 10;
 
+-- 4. Revenue by product category
+-- Business question:
+-- Which product categories generate the most revenue?
 
--- Top 10 most frequently ordered products
-SELECT 
-    product_id,
-    COUNT(DISTINCT order_id) AS order_count
+SELECT
+products.product_category_name,
+ROUND(SUM(order_items.price), 2) AS revenue
 FROM order_items
-GROUP BY product_id
-ORDER BY order_count DESC
+JOIN products
+ON order_items.product_id = products.product_id
+GROUP BY products.product_category_name
+ORDER BY revenue DESC
 LIMIT 10;
 
+-- 5. Average product price by category
+-- Business question:
+-- Which product categories have the highest average selling price?
 
--- Total quantity sold by product
-SELECT  
-    product_id,
-    SUM(order_item_id) AS total_quantity
-FROM order_items
-GROUP BY product_id
-ORDER BY total_quantity DESC;
-
-
--- Total revenue by product
 SELECT
-    product_id,
-    SUM(price) AS total_revenue
+products.product_category_name,
+ROUND(AVG(order_items.price), 2) AS average_price
+FROM order_items
+JOIN products
+ON order_items.product_id = products.product_id
+GROUP BY products.product_category_name
+ORDER BY average_price DESC
+LIMIT 10;
+
+-- 6. Top products by number of items sold
+-- Business question:
+-- Which individual products have the highest sales volume?
+
+SELECT
+product_id,
+COUNT(*) AS number_of_items_sold
 FROM order_items
 GROUP BY product_id
-ORDER BY total_revenue DESC;
+ORDER BY number_of_items_sold DESC
+LIMIT 10;
 
--- Top 10 products by revenue
-SELECT 
-    product_id,
-    SUM(price) AS total_revenue
+-- 7. Top products by revenue
+-- Business question:
+-- Which individual products generate the most revenue?
+
+SELECT
+product_id,
+ROUND(SUM(price), 2) AS revenue
 FROM order_items
-GROUP BY order_items
-ORDER BY total_revenue DESC
+GROUP BY product_id
+ORDER BY revenue DESC
 LIMIT 10;
