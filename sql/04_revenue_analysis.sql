@@ -1,82 +1,93 @@
--- Total revenue
-SELECT 
-    SUM(price) AS total_revenue
+-- ============================================================
+-- E-Commerce Data Analysis
+-- 04 - Revenue Analysis
+-- ============================================================
+-- Purpose:
+-- Analyze total revenue, average order value, high-value orders,
+-- and revenue trends over time.
+-- ============================================================
+
+-- 1. Total revenue
+-- Business question:
+-- How much revenue was generated from product sales?
+
+SELECT
+ROUND(SUM(price), 2) AS total_revenue
 FROM order_items;
 
--- Average order value
-SELECT
-    AVG(order_total) AS average_order_value
-FROM (
-    SELECT
-        order_id,
-        SUM(price) AS order_total
-    FROM order_items
-    GROUP BY order_id
-);
+-- 2. Average order value
+-- Business question:
+-- What is the average amount spent per order?
 
--- Min and max order value
-SELECT 
-    MIN(order_total) AS minimum_order_value,
-    MAX(order_total) AS maximum_order_value
-FROM (
-    SELECT
-        order_id,
-        SUM(price) AS order_total
-    FROM order_items
-    GROUP BY order_id
-);
-
--- Top 10 highest value orders
 SELECT
-    order_id,
-    SUM(price) AS order_total
+ROUND(SUM(order_items.price) / COUNT(DISTINCT order_items.order_id), 2)
+AS average_order_value
+FROM order_items;
+
+-- 3. Highest-value order
+-- Business question:
+-- What is the largest order by product value?
+
+SELECT
+order_id,
+ROUND(SUM(price), 2) AS order_value
 FROM order_items
 GROUP BY order_id
-ORDER BY order_total DESC
+ORDER BY order_value DESC
 LIMIT 10;
 
--- Revenue by month
-SELECT 
-    strftime('%Y-%m', o.order_purchase_timestamp) AS month,
-    SUM(oi.price) AS monthly_revenue
-FROM orders o
-JOIN order_items oi
-    ON o.order_id = oi.order_id
-GROUP BY month
-ORDER BY month;
+-- 4. Revenue by year
+-- Business question:
+-- How does total revenue change from year to year?
 
--- Number of orders by month
-SELECT 
-    strftime('%Y-%m', order_purchase_timestamp) AS month,
-    COUNT(*) AS order_count
+SELECT
+strftime('%Y', orders.order_purchase_timestamp) AS year,
+ROUND(SUM(order_items.price), 2) AS revenue
 FROM orders
+JOIN order_items
+ON orders.order_id = order_items.order_id
+GROUP BY year
+ORDER BY year;
+
+-- 5. Monthly revenue
+-- Business question:
+-- Which months generate the most revenue?
+
+SELECT
+strftime('%Y-%m', orders.order_purchase_timestamp) AS month,
+ROUND(SUM(order_items.price), 2) AS revenue
+FROM orders
+JOIN order_items
+ON orders.order_id = order_items.order_id
 GROUP BY month
-ORDER BY month;
+ORDER BY revenue DESC;
 
--- Highest value order
-SELECT 
-    MAX(order_total) AS highest_order_value
-FROM (
-    SELECT 
-        order_id,
-        SUM(price) AS order_total
-    FROM order_items
-    GROUP BY order_id
-);
+-- 6. Revenue by product category
+-- Business question:
+-- Which product categories contribute the most revenue?
 
--- Monthly average order value
-SELECT 
-    month,
-    AVG(order_total) AS average_order_value
-FROM (
-    SELECT 
-        strftime('%Y-%m', o.order_purchase_timestamp) AS month,
-        o.order_id,
-        SUM(oi.price) AS order_total
-    FROM orders
-    JOIN order_items oi
-        ON o.order_id = oi.order_id
-    GROUP BY month, o.order_id
-)
+SELECT
+products.product_category_name,
+ROUND(SUM(order_items.price), 2) AS revenue
+FROM order_items
+JOIN products
+ON order_items.product_id = products.product_id
+GROUP BY products.product_category_name
+ORDER BY revenue DESC
+LIMIT 10;
+
+-- 7. Average order value by month
+-- Business question:
+-- Does the average amount spent per order change over time?
+
+SELECT
+strftime('%Y-%m', orders.order_purchase_timestamp) AS month,
+ROUND(
+SUM(order_items.price) / COUNT(DISTINCT orders.order_id),
+2
+) AS average_order_value
+FROM orders
+JOIN order_items
+ON orders.order_id = order_items.order_id
 GROUP BY month
 ORDER BY month;
