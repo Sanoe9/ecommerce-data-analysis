@@ -1,0 +1,5 @@
+data/
+ecommerce.db
+ecommerce.db-journal
+*.db
+*.db-journal
