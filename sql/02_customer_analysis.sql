@@ -1,129 +1,85 @@
--- How many unique cutomers are in the dataset
-SELECT 
-    COUNT(DISTINCT customer_unique_id) AS unique_customers
+-- ============================================================
+-- E-Commerce Data Analysis
+-- 02 - Customer Analysis
+-- ============================================================
+-- Purpose:
+-- Analyze the customer base, order frequency, and repeat
+-- purchasing behavior.
+-- ============================================================
+
+-- 1. Total number of customers
+-- Business question:
+-- How many unique customers are in the dataset?
+
+SELECT
+COUNT(DISTINCT customer_id) AS total_customers
 FROM customers;
 
+-- 2. Average number of orders per customer
+-- Business question:
+-- How frequently does the average customer place an order?
 
--- How many customer records are in the table
-SELECT 
-    COUNT(*) AS customer_records
-FROM customers;
-
-
--- How many unique customer locations are represented
-SELECT 
-    COUNT(DISTINCT customer_zip_code_prefix) AS unique_zip_prefixes
-FROM customers;
-
-
--- How many orders did each customer place
 SELECT
-    customer_unique_id,
-    COUNT(DISTINCT o.order_id) AS order_count
-FROM customers c
-JOIN orders o
-    ON c.customer_id = o.customer_id
-GROUP BY customer_unique_id
-ORDER BY order_count DESC;
+ROUND(
+COUNT(*) * 1.0 / COUNT(DISTINCT customer_id),
+2
+) AS average_orders_per_customer
+FROM orders;
 
+-- 3. Customers with 3 or more orders
+-- Business question:
+-- How many customers are frequent repeat purchasers?
 
--- Which customers placed more than 1 order
-SELECT 
-    customer_unique_id,
-    COUNT(DISTINCT order_id) AS order_count
-FROM customers
-GROUP BY customer_unique_id
-HAVING COUNT(DISTINCT order_id) > 1
-ORDER BY order_count DESC;
-
-
--- How many repeat customers are there
-SELECT 
-    COUNT(*) AS repeat_customers
-FROM (
-    SELECT
-        customer_unique_id
-    FROM customers
-    GROUP BY customer_unique_id
-    HAVING COUNT(DISTINCT order_id) > 1
-);
-
-
--- What percentage of customers are repeat customers
 SELECT
-    ROUND(
-        100.0 * COUNT(*) /
-        (SELECT COUNT(DISTINCT customer_unique_id)
-        FROM customers),
-        2
-    ) AS repeat_customers_rate_percent
+COUNT(*) AS customers_with_3_or_more_orders
 FROM (
-    SELECT
-        customer_unique_id
-    FROM customers
-    GROUP BY customer_unique_id
-    HAVING COUNT(DISTINCT order_id) > 1
-);
-
-
--- What percentage of customers are in each state?
 SELECT
-    customer_state,
-    COUNT(DISTINCT customer_unique_id) AS customer_count,
-    ROUND(
-        100.0 * COUNT(DISTINCT customer_unique_id) / 
-        (SELECT COUNT(DISTINCT customer_unique_id)
-        FROM customers),
-        2
-    ) AS percentage_of_customers
-FROM customers
-GROUP BY customer_state
-ORDER BY customer_count DESC;
-
-
--- Which customers have placed the most orders
-SELECT 
-    customer_unique_id,
-    COUNT(DISTINCT o.order_id) AS order_count
-FROM customers c
-JOIN orders o
-    ON c.customer_id = o.customer_id
-GROUP BY c.customer_unique_id
-HAVING COUNT(DISTINCT order_id) >= 3
-ORDER BY order_count DESC;
-
--- How many customers placed 3 or more orders
-SELECT COUNT(*) AS customers_with_3
-FROM (
-    SELECT 
-        c.customer_unique_id
-    FROM customers c
-    JOIN orders o
-        ON c.customer_id = o.customer_id
-    GROUP BY c.customer_unique_id
-    HAVING COUNT(DISTINCT o.order_id) >= 3
+customer_id,
+COUNT(*) AS order_count
+FROM orders
+GROUP BY customer_id
+HAVING COUNT(*) >= 3
 );
 
--- Average orders per customer
-SELECT AVG(order_count) AS average_orders_per_customer
-FROM (
-    SELECT 
-        c.customer_unique_id,
-        COUNT(DISTINCT o.order_id) AS order_count
-    FROM customers c
-    JOIN orders o
-        ON c.customer_id = o.customer_id
-    GROUP BY c.customer_unique_id
-);
+-- 4. Top customers by number of orders
+-- Business question:
+-- Which customers have placed the most orders?
 
--- Highest number of orders placed by one customer
-SELECT MAX(order_count) AS highest_orders_by_customer
+SELECT
+customer_id,
+COUNT(*) AS number_of_orders
+FROM orders
+GROUP BY customer_id
+ORDER BY number_of_orders DESC
+LIMIT 10;
+
+-- 5. Customer order frequency distribution
+-- Business question:
+-- How many customers placed 1, 2, 3, etc. orders?
+
+SELECT
+order_count,
+COUNT(*) AS number_of_customers
 FROM (
-    SELECT 
-        c.customer_unique_id,
-        COUNT(DISTINCT o.order_id) AS order_count
-    FROM customers c
-    JOIN orders o
-        ON c.customer_id = o.customer_id
-    GROUP BY c.customer_unique_id
-);
+SELECT
+customer_id,
+COUNT(*) AS order_count
+FROM orders
+GROUP BY customer_id
+)
+GROUP BY order_count
+ORDER BY order_count;
+
+-- 6. Customers and their total spending
+-- Business question:
+-- Which customers generated the most revenue?
+
+SELECT
+orders.customer_id,
+ROUND(SUM(order_items.price), 2) AS total_spent
+FROM orders
+JOIN order_items
+ON orders.order_id = order_items.order_id
+GROUP BY orders.customer_id
+ORDER BY total_spent DESC
+LIMIT 10;
